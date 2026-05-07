@@ -7,6 +7,11 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt /tmp/requirements.txt
 USER airflow
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+COPY requirements.txt /tmp/requirements.txt
+
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip uninstall -y pandas || true \
+    && pip install --no-cache-dir -r /tmp/requirements.txt \
+    && pip install --no-cache-dir pandas==2.2.2 pyarrow

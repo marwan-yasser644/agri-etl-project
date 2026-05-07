@@ -6,16 +6,45 @@ services:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+
+  airflow-init:
+    build: .
+    image: agri-airflow:2.9.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    command: >
+      bash -c "airflow db init &&
+               airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data:/opt/airflow/data
 
   airflow-webserver:
     build: .
     image: agri-airflow:2.9.0
     depends_on:
-      - postgres
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+
+      AIRFLOW__WEBSERVER__SECRET_KEY: 'my-super-secret-key-change-this-in-production'
       AIRFLOW__WEBSERVER__SECURE_COOKIES_IN_BROWSER_ONLY: 'false'
       AIRFLOW__WEBSERVER__COOKIE_SECURE: 'false'
       AIRFLOW__WEBSERVER__COOKIE_SAMESITE: 'Lax'
@@ -25,29 +54,46 @@ services:
       AIRFLOW__WEBSERVER__WORKER_REFRESH_INTERVAL: '60'
       AIRFLOW__WEBSERVER__BASE_LOG_FOLDER: '/opt/airflow/logs'
       AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: 'true'
+
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./data:/opt/airflow/data
+      - ./logs:/opt/airflow/logs
+
     ports:
       - "8080:8080"
     command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   airflow-scheduler:
     build: .
     image: agri-airflow:2.9.0
     depends_on:
-      - airflow-webserver
-      - postgres
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     environment:
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+
       AIRFLOW__WEBSERVER__SECURE_COOKIES_IN_BROWSER_ONLY: 'false'
       AIRFLOW__WEBSERVER__COOKIE_SECURE: 'false'
       AIRFLOW__WEBSERVER__COOKIE_SAMESITE: 'Lax'
+
     volumes:
       - ./dags:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./data:/opt/airflow/data
+      - ./logs:/opt/airflow/logs
+
     command: scheduler
+
+volumes:
+  postgres-db-volume:
