@@ -19,22 +19,22 @@ with DAG(
 
     simulate_data = BashOperator(
         task_id='simulate_data',
-        bash_command='python /opt/airflow/scripts/simulate_data.py'
+        bash_command='python3 /opt/airflow/scripts/simulate_data.py && echo "Task completed successfully"'
     )
 
     extraction = BashOperator(
         task_id='extract_to_hdfs',
-        bash_command='python /opt/airflow/scripts/extraction_to_hdfs.py'
+        bash_command='python3 /opt/airflow/scripts/extraction_to_hdfs.py && echo "Extraction completed successfully"'
     )
 
     transform = BashOperator(
         task_id='transform_data',
-        bash_command='python /opt/airflow/scripts/transformation_spark.py'
+        bash_command='python3 /opt/airflow/scripts/transformation_spark.py && echo "Transform completed successfully"'
     )
 
     load = BashOperator(
         task_id='load_to_snowflake',
-        bash_command='python /opt/airflow/scripts/load_to_snowflake.py'
+        bash_command='python3 /opt/airflow/scripts/load_to_snowflake.py && echo "Load completed successfully"'
     )
 
     simulate_data >> extraction >> transform >> load
