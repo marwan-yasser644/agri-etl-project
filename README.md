@@ -46,4 +46,8 @@ The Airflow DAG `agri_data_pipeline` consists of the following tasks:
 * Build a real-time dashboard using **Streamlit**.
 * Add Slack notifications for pipeline failures.
 
-![Uploading ChatGPT Image May 10, 2026, 09_50_09 AM (1).png…]()
+<p align="center">
+  <img src="<img width="1536" height="1024" alt="ChatGPT Image May 10, 2026, 09_50_09 AM (1)" src="https://github.com/user-attachments/assets/b142ad06-58bf-4f1c-a3a0-c30365bbb054" />
+" width="1000">
+</p>
+
